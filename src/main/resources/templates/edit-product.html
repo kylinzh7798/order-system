@@ -24,15 +24,15 @@
             <label>Name:</label>
             <input class="form-control" type="text"
                    name="name"
-                   th:value="${product.name}" />
+                   th:value="${product.name}" required/>
         </div>
 
         <div class="mb-3">
             <label>Price:</label>
             <input class="form-control" type="number"
-                   min="0" step="0.01"
+                   min="0.01" max="1000000" step="0.01"
                    name="price"
-                   th:value="${product.price}" />
+                   th:value="${product.price}" required />
         </div>
 
         <button class="btn btn-success" type="submit">Update</button>

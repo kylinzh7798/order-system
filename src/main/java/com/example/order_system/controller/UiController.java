@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 @Controller
 public class UiController {
 
@@ -19,10 +22,19 @@ public class UiController {
         this.productService = productService;
     }
 
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+    @GetMapping("/")
+    public String home() {
+        return "redirect:/login";
+    }
+
     @GetMapping("/ui/products")
     public String showProducts(Model model) {
         model.addAttribute("products", productService.getProducts());
-        return "products";
+        return "admin-products";
     }
     @GetMapping("/ui/products/new")
     public String showAddForm() {
@@ -30,7 +42,7 @@ public class UiController {
     }
     @PostMapping("/ui/products")
     public String addProduct(@RequestParam String name,
-                             @RequestParam Double price) {
+                             @RequestParam BigDecimal price) {
 
         Product product = new Product();
         product.setName(name);
@@ -51,7 +63,7 @@ public class UiController {
     @PostMapping("/ui/products/update")
     public String updateProduct(@RequestParam Long id,
                                 @RequestParam String name,
-                                @RequestParam Double price) {
+                                @RequestParam BigDecimal price) {
 
         Product product = productService.getProductById(id);
         product.setPrice(price);
@@ -60,4 +72,11 @@ public class UiController {
 
         return "redirect:/ui/products?success=updated";
     }
+
+    @PostMapping("/ui/products/delete/{id}")
+    public String deleteProduct(@PathVariable Long id) {
+        productService.deleteById(id);
+        return "redirect:/ui/products?success=deleted";
+    }
+
 }

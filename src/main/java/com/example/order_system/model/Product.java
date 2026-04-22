@@ -4,6 +4,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+
+import java.math.BigDecimal;
 
 @Entity
 public class Product {
@@ -13,12 +17,15 @@ public class Product {
     private Long id;
 
     private String name;
-    private Double price;
+
+    @DecimalMin("0.01")
+    @DecimalMax("1000000")
+    private BigDecimal price;
 
     public Product() {
     }
 
-    public Product(Long id, String name, Double price) {
+    public Product(Long id, String name, BigDecimal price) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -32,7 +39,7 @@ public class Product {
         return name;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
@@ -44,7 +51,7 @@ public class Product {
         this.name = name;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 }
