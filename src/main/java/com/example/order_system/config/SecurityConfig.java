@@ -21,39 +21,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(csrf -> csrf.disable())
+        http
+                .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        // 🔥 最关键：先放行所有公开资源
                         .requestMatchers(
-                                "/login",
+                                "/ui/login",   // ⭐ 必须放行
                                 "/error",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"
                         ).permitAll()
-                        // API（先全部放开测试）
+
                         .requestMatchers("/api/**").permitAll()
-                        // 其他必须登录
+
                         .anyRequest().authenticated()
                 )
+
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .successHandler((request, response, authentication) -> {
-
-                            boolean isAdmin = authentication.getAuthorities().stream()
-                                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-                            if (isAdmin) {
-                                response.sendRedirect("/ui/products");   // admin 页面
-                            } else {
-                                response.sendRedirect("/client/products"); // user 页面（AI）
-                            }
-                        })
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout")
+                        .loginPage("/ui/login")        // 页面地址
+                        .loginProcessingUrl("/login") // 提交地址
+                        .defaultSuccessUrl("/ui/products", true)
                         .permitAll()
                 );
 
@@ -61,26 +49,21 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        PasswordEncoder encoder = new BCryptPasswordEncoder();
-
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(encoder.encode("123456"))
-                .roles("ADMIN")
-                .build();
-
-        UserDetails user = User.builder()
-                .username("user")
-                .password(encoder.encode("123456"))
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(admin, user);
+    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+        return new InMemoryUserDetailsManager(
+                User.withUsername("admin")
+                        .password(encoder.encode("123456"))
+                        .roles("ADMIN")
+                        .build(),
+                User.withUsername("user")
+                        .password(encoder.encode("123456"))
+                        .roles("USER")
+                        .build()
+        );
     }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 }

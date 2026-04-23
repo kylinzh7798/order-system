@@ -3,8 +3,7 @@ package com.example.order_system.controller;
 import com.example.order_system.dto.ChatRequest;
 import com.example.order_system.dto.ToolRequest;
 import com.example.order_system.service.AIParserService;
-import com.example.order_system.service.AiService;
-import com.example.order_system.service.ToolExecutorService;
+import com.example.order_system.service.CommandDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +18,7 @@ public class AIController {
     private AIParserService parser;
 
     @Autowired
-    private AiService aiService;   // ✅ 加这个
+    private CommandDispatcher aiService;   // ✅ 加这个
 
     @PostMapping("/chat")
     public String chat(@RequestBody ChatRequest request) {

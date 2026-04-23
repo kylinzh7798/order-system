@@ -1,19 +1,17 @@
 package com.example.order_system.controller;
 
+import com.example.order_system.model.Product;
 import com.example.order_system.service.ProductService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import com.example.order_system.model.Product;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Controller
+@RequestMapping("/ui")
 public class UiController {
 
     private final ProductService productService;
@@ -22,27 +20,51 @@ public class UiController {
         this.productService = productService;
     }
 
+    // =============================
+    // 🔐 LOGIN PAGE
+    // =============================
     @GetMapping("/login")
     public String login() {
         return "login";
     }
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/login";
+
+
+    // =============================
+    // 📦 LIST PRODUCTS
+    // =============================
+    @GetMapping("/products")
+    public String showProducts(Model model) {
+
+        boolean isAdmin = isAdmin();
+
+        model.addAttribute("products", productService.getAllProducts());
+        model.addAttribute("isAdmin", isAdmin);
+
+        return isAdmin ? "admin-products" : "client-products";
     }
 
-    @GetMapping("/ui/products")
-    public String showProducts(Model model) {
-        model.addAttribute("products", productService.getProducts());
-        return "admin-products";
-    }
-    @GetMapping("/ui/products/new")
+    // =============================
+    // ➕ SHOW ADD FORM
+    // =============================
+    @GetMapping("/products/new")
     public String showAddForm() {
+        if (!isAdmin()) {
+            return "redirect:/ui/products?error=denied";
+        }
         return "add-product";
     }
-    @PostMapping("/ui/products")
-    public String addProduct(@RequestParam String name,
-                             @RequestParam BigDecimal price) {
+
+    // =============================
+    // ➕ HANDLE ADD
+    // =============================
+    @PostMapping("/products")
+    public String addProduct(
+            @RequestParam String name,
+            @RequestParam BigDecimal price
+    ) {
+        if (!isAdmin()) {
+            return "redirect:/ui/products?error=denied";
+        }
 
         Product product = new Product();
         product.setName(name);
@@ -53,30 +75,76 @@ public class UiController {
         return "redirect:/ui/products?success=created";
     }
 
-    @GetMapping("/ui/products/edit/{id}")
+    // =============================
+    // ✏️ SHOW EDIT FORM
+    // =============================
+    @GetMapping("/products/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model) {
+
+        if (!isAdmin()) {
+            return "redirect:/ui/products?error=denied";
+        }
+
         Product product = productService.getProductById(id);
+
+        if (product == null) {
+            return "redirect:/ui/products?error=notfound";
+        }
+
         model.addAttribute("product", product);
-        return "edit-product";   // ✅ 返回页面
+        return "edit-product";
     }
 
-    @PostMapping("/ui/products/update")
-    public String updateProduct(@RequestParam Long id,
-                                @RequestParam String name,
-                                @RequestParam BigDecimal price) {
+    // =============================
+    // ✏️ HANDLE UPDATE
+    // =============================
+    @PostMapping("/products/update")
+    public String updateProduct(
+            @RequestParam Long id,
+            @RequestParam String name,
+            @RequestParam BigDecimal price
+    ) {
+
+        if (!isAdmin()) {
+            return "redirect:/ui/products?error=denied";
+        }
 
         Product product = productService.getProductById(id);
-        product.setPrice(price);
+
+        if (product == null) {
+            return "redirect:/ui/products?error=notfound";
+        }
+
         product.setName(name);
+        product.setPrice(price);
+
         productService.save(product);
 
         return "redirect:/ui/products?success=updated";
     }
 
-    @PostMapping("/ui/products/delete/{id}")
+    // =============================
+    // 🗑 DELETE
+    // =============================
+    @GetMapping("/products/delete/{id}")
     public String deleteProduct(@PathVariable Long id) {
+
+        if (!isAdmin()) {
+            return "redirect:/ui/products?error=denied";
+        }
+
         productService.deleteById(id);
+
         return "redirect:/ui/products?success=deleted";
     }
 
+    // =============================
+    // 🔐 ROLE CHECK（核心）
+    // =============================
+    private boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
 }
